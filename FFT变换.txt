@@ -1,0 +1,103 @@
+﻿%2019 05 31 1616 《Matlab 数字信号处理85个实用案例精讲---入门到进阶》
+%灵敏度处理---放大10倍
+%保存的点数为：10K
+%采样率定为：0.01Hz*100K=1kHz的采样率
+%时间设置为：1s/div
+
+clear all; clc; close all;
+
+load('data.mat');   %信号，就是我们的反馈曲线的数据
+x=data(:,1);
+x=detrend(x);   %消除趋势项.为了得到较好的谱分析，对于任意一组数据，都应该先消除直流分量和趋势项！！！
+% clear data;
+
+fs=1*10^3;   %采样频率，需要大于信号最高频率的2倍。解决混叠现象
+
+N=length( x );   %信号长度
+n=1:N;   %样点索引
+t=( n-1 )/fs;   %时间刻度
+
+% L=10*N;   %补零后的FFT长度。解决栅栏现象
+L=2^17;    %一般为2^k; 用以提高计算分辨率   17---13,1072; 
+% 20---104,8576;  19---52,4288;   18---26,2144;   17---13,1072;   16---6,5536；15---3,2768 
+
+wind=blackman(N);   %给出布莱克曼窗函数，以减少频谱的泄露！可以换用其他窗函数
+X=fft(x .* wind,L);   %按L长进行FFT。加窗函数解决泄露现象
+freq=( 0:L/2 )*fs/L;   %L点时的频率刻度
+X_abs=abs( X( 1:L/2+1 ) )*2/N;   %信号幅值
+X_abs=X_abs*2.381*1000;   %对加窗后的幅值进行修正，单位：mV
+
+%噪声图-动态
+x2=data(:,2);
+x2=detrend(x2);   %消除趋势项.为了得到较好的谱分析，对于任意一组数据，都应该先消除直流分量和趋势项！！！
+clear data;
+
+X2=fft(x2 .* wind,L);   %按L长进行FFT。加窗函数解决泄露现象
+X_abs2=abs( X2( 1:L/2+1 ) )*2/N;   %信号幅值
+X_abs2=X_abs2*2.381*1000;   %对加窗后的幅值进行修正，单位：mV
+
+
+
+%作图
+fig_1=figure;
+set(fig_1,'Position',[150 250 1000 600],'PaperPositionMode','auto');
+
+plot( freq(1:1:end) , X_abs(1:1:end) ,'b','linewidth',1 ); hold on
+plot( freq(1:1:end) , X_abs2(1:1:end) ,'r','linewidth',1 );
+legend('噪声（静态）','噪声（旋转）');
+set(gca,'fontsize',15,'FontWeight','bold');
+% grid;
+xlabel('频率/Hz','fontsize',20,'FontWeight','bold');
+ylabel( '幅值（mV）' , 'fontsize',20,'FontWeight','bold');
+title( 'DFT频谱图','fontsize',15,'FontWeight','bold' );
+
+%作图中图
+n2=length(freq);
+x_range_zuo=1;
+x_range_you=floor(n2/25)+0;
+x_range=x_range_zuo : 4 : x_range_you;
+axes('Position',[0.22 , 0.34 , 0.65 , 0.47 ]);   % 设置小图的位置                                                                     
+plot( freq( x_range ) ,X_abs( x_range ) ,'b','linewidth',2 );    hold on       % plot the local small figure  
+plot( freq( x_range ) ,X_abs2( x_range ) ,'r','linewidth',2 );    hold on       % plot the local small figure  
+grid minor
+xlim( [ min( freq(x_range) ) , max( freq(x_range) ) ] );                         % set the axes range 
+% ylim( [ min( X_abs(x_range) )/10 , max( X_abs(x_range) )*2 ] );                         % set the axes range 
+str=['频率' '0.2Hz'];
+text( 0.1, 1.5 ,...
+    cellstr(str),...
+    'fontsize',15,'FontWeight','bold',...
+    'color',[0 0 0]);
+str=['频率' '0.6Hz'];
+text( 0.65, 1.8 ,...
+    cellstr(str),...
+    'fontsize',15,'FontWeight','bold',...
+    'color',[0 0 0]);
+str=['频率' '1.2Hz'];
+text( 1.2, 1.16 ,...
+    cellstr(str),...
+    'fontsize',15,'FontWeight','bold',...
+    'color',[0 0 0]);
+str=['频率' '1.7Hz'];
+text( 1.6, 0.85 ,...
+    cellstr(str),...
+    'fontsize',15,'FontWeight','bold',...
+    'color',[0 0 0]);
+str=['频率' '5.4Hz'];
+text( 5.4, 1.14 ,...
+    cellstr(str),...
+    'fontsize',15,'FontWeight','bold',...
+    'color',[0 0 0]);
+str=['频率' '5.8Hz'];
+text( 5.8, 0.98 ,...
+    cellstr(str),...
+    'fontsize',15,'FontWeight','bold',...
+    'color',[0 0 0]);
+
+set(gca,'fontsize',12,'FontWeight','bold');
+% grid;
+xlabel('频率/Hz','fontsize',15,'FontWeight','bold');
+ylabel( '幅值（mV）' ,'fontsize',15,'FontWeight','bold');
+% title( 'DFT谱图','fontsize',10,'FontWeight','bold' );
+
+%打印图片
+print -djpeg -r600 噪声DFT分析
